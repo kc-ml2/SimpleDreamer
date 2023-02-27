@@ -1,0 +1,96 @@
+operation :
+    save : False
+    log_dir : hopper-hop
+    device : cuda
+environment :
+    benchmark : dmc
+    domain_name : hopper
+    task_name : hop
+    seed : 0
+    visualize_reward : False
+    from_pixels : True
+    height : 64
+    width : 64
+    frame_skip : 2
+
+parameters :
+    dreamer :
+        train_iterations : 1000
+        horizon_length : 15
+        batch_size : 50
+        batch_length : 50
+        collect_interval : 100
+        num_interaction_episodes : 1
+        seed_episodes : 5
+        num_evaluate : 3
+        
+        kl_divergence_scale : 1
+        free_nats : 3
+        discount : 0.99
+        lambda_ : 0.95
+        
+        use_continue_flag : False
+        actor_learning_rate : 0.00008
+        critic_learning_rate : 0.00008
+        model_learning_rate : 0.0006
+        grad_norm_type : 2
+        clip_grad : 100
+        
+        deterministic_size : 200
+        stochastic_size : 30
+        embedded_state_size : 1024
+        buffer :
+            capacity : 5000000
+        
+        encoder : 
+            depth : 32
+            stride : 2
+            kernel_size : 4
+            activation : ReLU
+
+        decoder : 
+            depth : 32
+            stride : 2
+            kernel_size : 5
+            activation : ReLU
+
+        rssm :
+            recurrent_model : 
+                hidden_size : 200
+                activation : ELU
+
+            transition_model : 
+                hidden_size : 200
+                num_layers : 2
+                activation : ELU
+                min_std : 0.1
+
+            representation_model:
+                hidden_size : 200
+                num_layers : 2
+                activation : ELU
+                min_std : 0.1
+            
+        reward :
+            hidden_size : 400
+            num_layers : 2
+            activation : ELU
+
+        continue_ :
+            hidden_size : 400
+            num_layers : 3
+            activation : ELU
+        
+        agent :
+            actor :
+                hidden_size : 400
+                min_std : 0.0001
+                init_std : 5.
+                mean_scale : 5
+                activation : ELU
+                num_layers : 2
+
+            critic : 
+                hidden_size : 400
+                activation : ELU
+                num_layers : 3 
