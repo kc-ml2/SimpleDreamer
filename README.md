@@ -1,8 +1,10 @@
-# SimpleDreamer: A Simplified Version of the Dreamer Algorithm
+# EasyDreamer: A Simplified Version of the Dreamer Algorithm with Pytorch
 
 ## Introduction
 
-In this repository, we've implemented a simplified version of the Dreamer algorithm, which is explained in detail in the paper [Dream to Control: Learning Behaviors by Latent Imagination](https://arxiv.org/abs/1912.01603). Dreamer's main goal is to train a model that helps agents perform well in environments with high sample efficiency. Our implementation aims to provide researchers and practitioners with a simplified version of Dreamer, allowing them to gain a deeper understanding of how the algorithm works and test their own ideas more efficiently.
+In this repository, we've implemented a simplified version of the Dreamer algorithm, which is explained in detail in the paper [Dream to Control: Learning Behaviors by Latent Imagination](https://arxiv.org/abs/1912.01603). The main goal of Dreamer is to train a model that helps agents perform well in environments with high sample efficiency. We have implemented our version of Dreamer using PyTorch, which simplifies the process and makes the model more accessible to researchers and practitioners who are already familiar with the PyTorch framework. With this implementation, they can gain a deeper understanding of how the algorithm works and test their own ideas more efficiently, contributing to the advancement of research in this field.
+
+
 
 ### Differences from other implementations
 
@@ -28,12 +30,6 @@ To run the training process, use the following command:
 ```
 python main.py --config dmc-walker-walk
 ```
-
-<hr/>
-
-## Performance
-
-* Will be updated
 
 <hr/>
 
@@ -94,6 +90,31 @@ python main.py --config dmc-walker-walk
 
 <hr/>
 
+## Performance
+
+| Task                    | 20-EMA  |
+|-------------------------|--------|
+| ball-in-cup-catch        | 936.9  |
+| walker-stand             | 972.8  |
+| quadruped-walk           | 584.7  |
+| cheetah-run              | 694.0  |
+| cartpole-balance         | 831.2  |
+| cartpole-swingup-sparse  | 219.3  |
+| finger-turn_easy         | 805.1  |
+| cartpole-balance-sparse  | 541.6  |
+| hopper-hop               | 250.7  |
+| walker-run               | 284.6  |
+| reacher-hard             | 162.7  |
+| reacher-easy             | 911.4  |
+| acrobot-swingup          | 91.8   |
+| finger-spin              | 543.5  |
+| cartpole-swingup         | 607.8  |
+| walker-walk              | 871.3  |
+
+All reported results were obtained by running the experiments 3 times with different random seeds. Evaluation was performed after each interaction with the environment, and the reported performance metric is the 20-EMA (exponential moving average) of the cumulative reward in a single episode.
+
+<hr/>
+
 ## References
 
 * [Dream to Control: Learning Behaviors by Latent Imagination](https://arxiv.org/abs/1912.01603)
@@ -101,6 +122,3 @@ python main.py --config dmc-walker-walk
 * [https://github.com/danijar/dreamer](https://github.com/danijar/dreamer)
 * [https://github.com/juliusfrost/dreamer-pytorch](https://github.com/juliusfrost/dreamer-pytorch)
 * [https://github.com/yusukeurakami/dreamer-pytorch](https://github.com/yusukeurakami/dreamer-pytorch)
-
-
-
