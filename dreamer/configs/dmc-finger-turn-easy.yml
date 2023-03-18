@@ -1,3 +1,4 @@
+algorithm : dreamer-v1
 operation :
     save : False
     log_dir : finger-turn_easy

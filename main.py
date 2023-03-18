@@ -7,6 +7,7 @@ from datetime import datetime
 from torch.utils.tensorboard import SummaryWriter
 
 from dreamer.algorithms.dreamer import Dreamer
+from dreamer.algorithms.plan2explore import Plan2Explore
 from dreamer.utils.utils import load_config, get_base_directory
 from dreamer.envs.envs import make_dmc_env, make_atari_env, get_env_infos
 
@@ -45,10 +46,15 @@ def main(config_file):
     writer = SummaryWriter(log_dir)
     device = config.operation.device
 
-    dreamer = Dreamer(
-        obs_shape, discrete_action_bool, action_size, writer, device, config
-    )
-    dreamer.train(env)
+    if config.algorithm == "dreamer-v1":
+        agent = Dreamer(
+            obs_shape, discrete_action_bool, action_size, writer, device, config
+        )
+    elif config.algorithm == "plan2explore":
+        agent = Plan2Explore(
+            obs_shape, discrete_action_bool, action_size, writer, device, config
+        )
+    agent.train(env)
 
 
 if __name__ == "__main__":
