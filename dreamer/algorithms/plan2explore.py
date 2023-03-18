@@ -3,7 +3,9 @@ import torch.nn as nn
 import numpy as np
 
 from dreamer.algorithms.dreamer import Dreamer
-
+from dreamer.modules.actor import Actor
+from dreamer.modules.critic import Critic
+from dreamer.modules.one_step_model import OneStepModel
 from dreamer.utils.utils import (
     pixel_normalization,
     compute_lambda_values,
@@ -23,9 +25,35 @@ class Plan2Explore(Dreamer):
         device,
         config,
     ):
-        super().__init__(observation_shape, discrete_action_bool, action_size, writer, device, config)
+        super().__init__(
+            observation_shape, discrete_action_bool, action_size, writer, device, config
+        )
         self.config = self.config + config.parameters.plan2explore
-        
+
+        self.intrinsic_actor = Actor(discrete_action_bool, action_size, config).to(
+            self.device
+        )
+        self.intrinsic_critic = Critic(config).to(self.device)
+
+        self.one_step_models = [
+            OneStepModel(action_size, config).to(self.device)
+            for _ in range(self.config.num_ensemble)
+        ]
+        self.one_step_models_params = nn.ModuleList(self.one_step_models).parameters()
+        self.one_step_models_optimizer = torch.optim.Adam(
+            self.one_step_models_params, lr=self.config.one_step_model_learning_rate
+        )
+
+        self.intrinsic_actor_optimizer = torch.optim.Adam(
+            self.intrinsic_actor.parameters(), lr=self.config.actor_learning_rate
+        )
+        self.intrinsic_critic_optimizer = torch.optim.Adam(
+            self.intrinsic_critic.parameters(), lr=self.config.critic_learning_rate
+        )
+
+        self.intrinsic_actor.intrinsic = True
+        self.actor.intrinsic = False
+
     def train(self, env):
         if len(self.buffer) < 1:
             self.environment_interaction(self.actor, env, self.config.seed_episodes)
@@ -36,16 +64,26 @@ class Plan2Explore(Dreamer):
                     self.config.batch_size, self.config.batch_length
                 )
                 posteriors, deterministics = self.dynamic_learning(data)
-                self.behavior_learning(self.actor, self.critic, self.actor_optimizer,
-                                       self.critic_optimizer, posteriors, deterministics)
+                self.behavior_learning(
+                    self.actor,
+                    self.critic,
+                    self.actor_optimizer,
+                    self.critic_optimizer,
+                    posteriors,
+                    deterministics,
+                )
 
-            self.environment_interaction(self.actor, env, self.config.num_interaction_episodes)
+            self.environment_interaction(
+                self.actor, env, self.config.num_interaction_episodes
+            )
             self.evaluate(self.actor, env)
 
     def evaluate(self, actor, env):
         self.environment_interaction(actor, env, self.config.num_evaluate, train=False)
 
-    def behavior_learning(self, actor, critic, actor_optimizer, critic_optimizer, states, deterministics):
+    def behavior_learning(
+        self, actor, critic, actor_optimizer, critic_optimizer, states, deterministics
+    ):
         """
         #TODO : last posterior truncation(last can be last step)
         posterior shape : (batch, timestep, stochastic)
@@ -62,12 +100,23 @@ class Plan2Explore(Dreamer):
                 priors=state, deterministics=deterministic
             )
 
-        self._agent_update(actor, critic, actor_optimizer, critic_optimizer, self.behavior_learning_infos.get_stacked())
+        self._agent_update(
+            actor,
+            critic,
+            actor_optimizer,
+            critic_optimizer,
+            self.behavior_learning_infos.get_stacked(),
+        )
 
-    def _agent_update(self, actor, critic, actor_optimizer, critic_optimizer, behavior_learning_infos):
-        predicted_rewards = self.reward_predictor(
-            behavior_learning_infos.priors, behavior_learning_infos.deterministics
-        ).mean
+    def _agent_update(
+        self, actor, critic, actor_optimizer, critic_optimizer, behavior_learning_infos
+    ):
+        if actor.intrinsic:
+            pass
+        else:
+            predicted_rewards = self.reward_predictor(
+                behavior_learning_infos.priors, behavior_learning_infos.deterministics
+            ).mean
         values = critic(
             behavior_learning_infos.priors, behavior_learning_infos.deterministics
         ).mean
@@ -113,7 +162,7 @@ class Plan2Explore(Dreamer):
             norm_type=self.config.grad_norm_type,
         )
         critic_optimizer.step()
-        
+
     def environment_interaction(self, actor, env, num_interaction_episodes, train=True):
         for epi in range(num_interaction_episodes):
             posterior, deterministic = self.rssm.recurrent_model_input_init(1)
