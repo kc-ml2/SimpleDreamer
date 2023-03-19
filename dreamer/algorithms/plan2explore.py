@@ -56,7 +56,9 @@ class Plan2Explore(Dreamer):
 
     def train(self, env):
         if len(self.buffer) < 1:
-            self.environment_interaction(self.actor, env, self.config.seed_episodes)
+            self.environment_interaction(
+                self.intrinsic_actor, env, self.config.seed_episodes
+            )
 
         for iteration in range(self.config.train_iterations):
             for collect_interval in range(self.config.collect_interval):
@@ -73,13 +75,132 @@ class Plan2Explore(Dreamer):
                     deterministics,
                 )
 
+                self.behavior_learning(
+                    self.intrinsic_actor,
+                    self.intrinsic_critic,
+                    self.intrinsic_actor_optimizer,
+                    self.intrinsic_critic_optimizer,
+                    posteriors,
+                    deterministics,
+                )
+
             self.environment_interaction(
-                self.actor, env, self.config.num_interaction_episodes
+                self.intrinsic_actor, env, self.config.num_interaction_episodes
             )
             self.evaluate(self.actor, env)
 
     def evaluate(self, actor, env):
         self.environment_interaction(actor, env, self.config.num_evaluate, train=False)
+
+    def dynamic_learning(self, data):
+        prior, deterministic = self.rssm.recurrent_model_input_init(len(data.action))
+
+        data.embedded_observation = self.encoder(data.observation)
+
+        for t in range(1, self.config.batch_length):
+            deterministic = self.rssm.recurrent_model(
+                prior, data.action[:, t - 1], deterministic
+            )
+            prior_dist, prior = self.rssm.transition_model(deterministic)
+            posterior_dist, posterior = self.rssm.representation_model(
+                data.embedded_observation[:, t], deterministic
+            )
+
+            self.dynamic_learning_infos.append(
+                priors=prior,
+                prior_dist_means=prior_dist.mean,
+                prior_dist_stds=prior_dist.scale,
+                posteriors=posterior,
+                posterior_dist_means=posterior_dist.mean,
+                posterior_dist_stds=posterior_dist.scale,
+                deterministics=deterministic,
+            )
+
+            prior = posterior
+
+        infos = self.dynamic_learning_infos.get_stacked()
+        self._model_update(data, infos)
+        return infos.posteriors.detach(), infos.deterministics.detach()
+
+    def _model_update(self, data, posterior_info):
+        reconstructed_observation_dist = self.decoder(
+            posterior_info.posteriors, posterior_info.deterministics
+        )
+        reconstruction_observation_loss = reconstructed_observation_dist.log_prob(
+            pixel_normalization(data.observation[:, 1:])
+        )
+        if self.config.use_continue_flag:
+            continue_dist = self.continue_predictor(
+                posterior_info.posteriors, posterior_info.deterministics
+            )
+            continue_loss = self.continue_criterion(
+                continue_dist.probs, 1 - data.done[:, 1:]
+            )
+
+        reward_dist = self.reward_predictor(
+            posterior_info.posteriors, posterior_info.deterministics
+        )
+        reward_loss = reward_dist.log_prob(data.reward[:, 1:])
+
+        prior_dist = create_normal_dist(
+            posterior_info.prior_dist_means,
+            posterior_info.prior_dist_stds,
+            event_shape=1,
+        )
+        posterior_dist = create_normal_dist(
+            posterior_info.posterior_dist_means,
+            posterior_info.posterior_dist_stds,
+            event_shape=1,
+        )
+        kl_divergence_loss = torch.mean(
+            torch.distributions.kl.kl_divergence(posterior_dist, prior_dist)
+        )
+        kl_divergence_loss = torch.max(
+            torch.tensor(self.config.free_nats).to(self.device), kl_divergence_loss
+        )
+        model_loss = (
+            self.config.kl_divergence_scale * kl_divergence_loss
+            - reconstruction_observation_loss.mean()
+            - reward_loss.mean()
+        )
+        if self.config.use_continue_flag:
+            model_loss += continue_loss.mean()
+
+        self.model_optimizer.zero_grad()
+        model_loss.backward()
+        nn.utils.clip_grad_norm_(
+            self.model_params,
+            self.config.clip_grad,
+            norm_type=self.config.grad_norm_type,
+        )
+        self.model_optimizer.step()
+
+        predicted_feature_dists = [
+            x(
+                data.action[:, :-1],
+                posterior_info.priors.detach(),
+                posterior_info.deterministics.detach(),
+            )
+            for x in self.one_step_models
+        ]
+        one_step_model_loss = -sum(
+            [
+                x.log_prob(data.embedded_observation[:, 1:].detach()).mean()
+                for x in predicted_feature_dists
+            ]
+        )
+
+        self.one_step_models_optimizer.zero_grad()
+        one_step_model_loss.backward()
+        self.writer.add_scalar(
+            "one step model loss", one_step_model_loss, self.num_total_episode
+        )
+        nn.utils.clip_grad_norm_(
+            self.one_step_models_params,
+            self.config.clip_grad,
+            norm_type=self.config.grad_norm_type,
+        )
+        self.one_step_models_optimizer.step()
 
     def behavior_learning(
         self, actor, critic, actor_optimizer, critic_optimizer, states, deterministics
@@ -97,7 +218,7 @@ class Plan2Explore(Dreamer):
             deterministic = self.rssm.recurrent_model(state, action, deterministic)
             _, state = self.rssm.transition_model(deterministic)
             self.behavior_learning_infos.append(
-                priors=state, deterministics=deterministic
+                priors=state, deterministics=deterministic, actions=action
             )
 
         self._agent_update(
@@ -112,7 +233,18 @@ class Plan2Explore(Dreamer):
         self, actor, critic, actor_optimizer, critic_optimizer, behavior_learning_infos
     ):
         if actor.intrinsic:
-            pass
+            predicted_feature_means = [
+                x(
+                    behavior_learning_infos.actions.detach(),
+                    behavior_learning_infos.priors.detach(),
+                    behavior_learning_infos.deterministics.detach(),
+                ).mean
+                for x in self.one_step_models
+            ]
+            predicted_feature_mean_stds = torch.stack(predicted_feature_means, 0).std(0)
+
+            predicted_rewards = predicted_feature_mean_stds.mean(-1, keepdims=True)
+
         else:
             predicted_rewards = self.reward_predictor(
                 behavior_learning_infos.priors, behavior_learning_infos.deterministics
