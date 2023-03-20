@@ -2,7 +2,7 @@ algorithm : plan2explore
 
 operation :
     save : False
-    log_dir : walker-walk
+    log_dir : batch-15-walker-walk
     device : cuda
 environment :
     benchmark : dmc
@@ -17,7 +17,7 @@ environment :
 
 parameters :
     plan2explore :
-        num_ensemble : 5
+        num_ensemble : 10
         one_step_model_learning_rate : 0.0003
         
         one_step_model : 
@@ -27,7 +27,7 @@ parameters :
     dreamer :
         train_iterations : 4000
         horizon_length : 15
-        batch_size : 50
+        batch_size : 15
         batch_length : 50
         collect_interval : 100
         num_interaction_episodes : 1
@@ -42,7 +42,7 @@ parameters :
         use_continue_flag : False
         actor_learning_rate : 0.00008
         critic_learning_rate : 0.00008
-        model_learning_rate : 0.0006
+        model_learning_rate : 0.0003
         grad_norm_type : 2
         clip_grad : 100
         
