@@ -235,9 +235,9 @@ class Plan2Explore(Dreamer):
         if actor.intrinsic:
             predicted_feature_means = [
                 x(
-                    behavior_learning_infos.actions.detach(),
-                    behavior_learning_infos.priors.detach(),
-                    behavior_learning_infos.deterministics.detach(),
+                    behavior_learning_infos.actions,
+                    behavior_learning_infos.priors,
+                    behavior_learning_infos.deterministics
                 ).mean
                 for x in self.one_step_models
             ]
