@@ -127,3 +127,5 @@ All reported results were obtained by running the experiments 3 times with diffe
 * [https://github.com/danijar/dreamer](https://github.com/danijar/dreamer)
 * [https://github.com/juliusfrost/dreamer-pytorch](https://github.com/juliusfrost/dreamer-pytorch)
 * [https://github.com/yusukeurakami/dreamer-pytorch](https://github.com/yusukeurakami/dreamer-pytorch)
+* [Planning to Explore via Self-Supervised World Models](https://arxiv.org/abs/2005.05960)
+* [https://github.com/danijar/dreamerv2](https://github.com/danijar/dreamerv2)
