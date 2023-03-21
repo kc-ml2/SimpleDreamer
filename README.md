@@ -4,7 +4,7 @@
 
 In this repository, we've implemented a simplified version of the Dreamer algorithm, which is explained in detail in the paper [Dream to Control: Learning Behaviors by Latent Imagination](https://arxiv.org/abs/1912.01603). The main goal of Dreamer is to train a model that helps agents perform well in environments with high sample efficiency. We have implemented our version of Dreamer using PyTorch, which simplifies the process and makes the model more accessible to researchers and practitioners who are already familiar with the PyTorch framework. With this implementation, they can gain a deeper understanding of how the algorithm works and test their own ideas more efficiently, contributing to the advancement of research in this field.
 
-
+We have also included a re-implementation of Plan2Explore, a model-based exploration method introduced in the paper [Planning to Explore via Self-Supervised World Models](https://arxiv.org/abs/2005.05960). Plan2Explore is designed to improve generalization about the model without any task-relevant information by using an unsupervised learning approach. Our PyTorch implementation of Plan2Explore is available in this repository.
 
 ### Differences from other implementations
 
@@ -27,10 +27,14 @@ pip install -r requirements.txt
 
 To run the training process, use the following command:
 
+### Dreamer
 ```
 python main.py --config dmc-walker-walk
 ```
-
+### Plan2Explore
+```
+python main.py --config p2e-dmc-walker-walk
+```
 <hr/>
 
 ## Architecture
@@ -84,13 +88,14 @@ python main.py --config dmc-walker-walk
 
 * discrete action space environment performance check
 * code-coverage test
-* plan2explore
 * dreamer-v2
 * dreamer-v3
 
 <hr/>
 
 ## Performance
+
+### Dreamer
 
 | Task                    | 20-EMA  |
 |-------------------------|--------|
