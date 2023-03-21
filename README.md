@@ -38,10 +38,13 @@ python main.py --config p2e-dmc-walker-walk
 <hr/>
 
 ## Architecture
+
+### Dreamer
 ```
 ┌── dreamer
 │   ├── algorithms
 │   │   └── dreamer.py : Dreamer algorithm. Including the loss function and training loop
+│   │   └── plan2explore.py : plan2explore algorithm. Including the loss function and training loop
 │   ├── configs
 │   │   └ : Contains hyperparameters for the training process and sets up the training environment
 │   ├── envs
@@ -60,7 +63,7 @@ python main.py --config p2e-dmc-walker-walk
 │   │   ├── encoder.py : A convolution network to generate embedded observation
 │   │         └ input : image
 │   │         └ output : embedded observation
-│   │   └── model.py : Contains the implementation of models
+│   │   ├── model.py : Contains the implementation of models
 │   │       └ RSSM : Stands for "Recurrent State-Space Model"
 │   │         └ RecurrentModel : A recurrent neural network to generate deterministic.
 │   │           └ input : stochastic and deterministic and action
@@ -77,11 +80,15 @@ python main.py --config p2e-dmc-walker-walk
 │   │       └ ContinueModel : A linear network to generate continue flag(not done)
 │   │         └ input : deterministic and stochastic
 │   │         └ output : continue flag
+│   │   └── one_step_model.py : A linear network to predict embedded observation # for plan2explore
+│   │         └ input : deterministic and stochastic and action
+│   │         └ output : embedded observation
 │   └── utils
 │       ├── buffer.py : Contains the replay buffer used to store and sample transitions during training
 │       └── utils.py : Contains other utility functions
 └── main.py : Reads the configuration file, sets up the environment, and starts the training process
 ```
+
 <hr/>
 
 ## Todo
