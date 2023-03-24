@@ -72,7 +72,7 @@ python main.py --config p2e-dmc-walker-walk
 │   │           └ input : deterministic
 │   │           └ output : stochastic(prior)
 │   │         └ RepresentationModel : A linear network to generate stochastic. we call it as posterior.
-│   │           └ input : embedded observation and deterministic and action 
+│   │           └ input : embedded observation and deterministic
 │   │           └ output : stochastic(posterior)
 │   │       └ RewardModel : A linear network to generate reward
 │   │         └ input : deterministic and stochastic 
