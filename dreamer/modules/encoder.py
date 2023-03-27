@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 
 from dreamer.utils.utils import (
-    pixel_normalization,
     initialize_weights,
     horizontal_forward,
 )
@@ -49,5 +48,5 @@ class Encoder(nn.Module):
         self.network.apply(initialize_weights)
 
     def forward(self, x):
-        x = pixel_normalization(x)
+
         return horizontal_forward(self.network, x, input_shape=self.observation_shape)
