@@ -74,8 +74,8 @@ def compute_lambda_values(rewards, values, continues, horizon_length, device, la
     values : (batch_size, time_step, hidden_size)
     continue flag will be added
     """
-    rewards = rewards[:, 1:]
-    continues = continues[:, 1:]
+    rewards = rewards[:, :-1]
+    continues = continues[:, :-1]
     next_values = values[:, 1:]
     last = next_values[:, -1]
     inputs = rewards + continues * next_values * (1 - lambda_)
