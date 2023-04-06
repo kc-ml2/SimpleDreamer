@@ -28,7 +28,7 @@ class Actor(nn.Module):
         x = self.network(x)
         if self.discrete_action_bool:
             dist = torch.distributions.OneHotCategorical(logits=x)
-            action = dist.sample() + x - x.detach()
+            action = dist.sample() + dist.probs - dist.probs.detach()
         else:
             dist = create_normal_dist(
                 x,
