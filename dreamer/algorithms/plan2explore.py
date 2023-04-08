@@ -294,7 +294,7 @@ class Plan2Explore(Dreamer):
             norm_type=self.config.grad_norm_type,
         )
         critic_optimizer.step()
-
+    @torch.no_grad()
     def environment_interaction(self, actor, env, num_interaction_episodes, train=True):
         for epi in range(num_interaction_episodes):
             posterior, deterministic = self.rssm.recurrent_model_input_init(1)
