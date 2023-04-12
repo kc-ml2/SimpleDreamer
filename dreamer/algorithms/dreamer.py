@@ -241,7 +241,7 @@ class Dreamer:
             norm_type=self.config.grad_norm_type,
         )
         self.critic_optimizer.step()
-        
+
     @torch.no_grad()
     def environment_interaction(self, env, num_interaction_episodes, train=True):
         for epi in range(num_interaction_episodes):

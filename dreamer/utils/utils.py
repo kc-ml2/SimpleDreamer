@@ -54,11 +54,20 @@ def initialize_weights(m):
 
 
 def create_normal_dist(
-    x, std=None, mean_scale=1, init_std=0, min_std=0.1, event_shape=None
+    x,
+    std=None,
+    mean_scale=1,
+    init_std=0,
+    min_std=0.1,
+    activation=None,
+    event_shape=None,
 ):
     if std == None:
         mean, std = torch.chunk(x, 2, -1)
-        mean = mean_scale * torch.tanh(mean / mean_scale)
+        mean = mean / mean_scale
+        if activation:
+            mean = activation(mean)
+        mean = mean_scale * mean
         std = F.softplus(std + init_std) + min_std
     else:
         mean = x

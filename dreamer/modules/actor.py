@@ -35,6 +35,7 @@ class Actor(nn.Module):
                 mean_scale=self.config.mean_scale,
                 init_std=self.config.init_std,
                 min_std=self.config.min_std,
+                activation=torch.tanh,
             )
             dist = torch.distributions.TransformedDistribution(dist, TanhTransform())
             action = torch.distributions.Independent(dist, 1).rsample()
