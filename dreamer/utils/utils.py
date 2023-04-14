@@ -1,7 +1,5 @@
 import os
 
-import gym
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -132,7 +130,7 @@ def find_file(file_name):
         if file_name in files:
             return os.path.join(root, file_name)
 
-    raise FileNotFoundError(f"File '{file}' not found in subdirectories of {cur_dir}")
+    raise FileNotFoundError(f"File '{file_name}' not found in subdirectories of {cur_dir}")
 
 
 def get_base_directory():
@@ -147,16 +145,3 @@ def load_config(config_path):
         config = yaml.load(f, Loader=yaml.FullLoader)
     return AttrDict(config)
 
-class PixelNormalization(gym.Wrapper):
-    def __init__(self, env):
-        super().__init__(env)
-
-    def step(self, action):
-        obs, reward, done, info = self.env.step(action)
-
-        return pixel_normalization(obs), reward, done, info
-
-    def reset(self):
-        obs = self.env.reset()
-
-        return pixel_normalization(obs)

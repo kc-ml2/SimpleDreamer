@@ -1,6 +1,8 @@
 import gym
 import numpy as np
 
+from dreamer.utils.utils import pixel_normalization
+
 
 class ChannelFirstEnv(gym.ObservationWrapper):
     def __init__(self, env):
@@ -34,3 +36,18 @@ class SkipFrame(gym.Wrapper):
             if done:
                 break
         return obs, total_reward, done, info
+
+
+class PixelNormalization(gym.Wrapper):
+    def __init__(self, env):
+        super().__init__(env)
+
+    def step(self, action):
+        obs, reward, done, info = self.env.step(action)
+
+        return pixel_normalization(obs), reward, done, info
+
+    def reset(self):
+        obs = self.env.reset()
+
+        return pixel_normalization(obs)

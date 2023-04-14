@@ -8,7 +8,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 from dreamer.algorithms.dreamer import Dreamer
 from dreamer.algorithms.plan2explore import Plan2Explore
-from dreamer.utils.utils import load_config, get_base_directory, PixelNormalization
+from dreamer.utils.utils import load_config, get_base_directory
+from dreamer.envs.wrappers import PixelNormalization
 from dreamer.envs.envs import make_dmc_env, make_atari_env, get_env_infos
 
 
