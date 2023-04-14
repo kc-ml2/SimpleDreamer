@@ -48,5 +48,4 @@ class Encoder(nn.Module):
         self.network.apply(initialize_weights)
 
     def forward(self, x):
-
         return horizontal_forward(self.network, x, input_shape=self.observation_shape)

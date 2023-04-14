@@ -8,10 +8,6 @@ import yaml
 from attrdict import AttrDict
 
 
-def pixel_normalization(x):
-    return x / 255.0 - 0.5
-
-
 def horizontal_forward(network, x, y=None, input_shape=(-1,), output_shape=(-1,)):
     batch_with_horizon_shape = x.shape[: -len(input_shape)]
     if not batch_with_horizon_shape:
@@ -130,7 +126,9 @@ def find_file(file_name):
         if file_name in files:
             return os.path.join(root, file_name)
 
-    raise FileNotFoundError(f"File '{file_name}' not found in subdirectories of {cur_dir}")
+    raise FileNotFoundError(
+        f"File '{file_name}' not found in subdirectories of {cur_dir}"
+    )
 
 
 def get_base_directory():
@@ -144,4 +142,3 @@ def load_config(config_path):
     with open(config_path) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     return AttrDict(config)
-
