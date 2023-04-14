@@ -1,5 +1,7 @@
 import os
 
+import gym
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -144,3 +146,17 @@ def load_config(config_path):
     with open(config_path) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     return AttrDict(config)
+
+class PixelNormalization(gym.Wrapper):
+    def __init__(self, env):
+        super().__init__(env)
+
+    def step(self, action):
+        obs, reward, done, info = self.env.step(action)
+
+        return pixel_normalization(obs), reward, done, info
+
+    def reset(self):
+        obs = self.env.reset()
+
+        return pixel_normalization(obs)

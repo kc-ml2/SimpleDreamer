@@ -9,7 +9,6 @@ from dreamer.modules.actor import Actor
 from dreamer.modules.critic import Critic
 
 from dreamer.utils.utils import (
-    pixel_normalization,
     compute_lambda_values,
     create_normal_dist,
     DynamicInfos,
@@ -125,7 +124,7 @@ class Dreamer:
             posterior_info.posteriors, posterior_info.deterministics
         )
         reconstruction_observation_loss = reconstructed_observation_dist.log_prob(
-            pixel_normalization(data.observation[:, 1:])
+            data.observation[:, 1:]
         )
         if self.config.use_continue_flag:
             continue_dist = self.continue_predictor(

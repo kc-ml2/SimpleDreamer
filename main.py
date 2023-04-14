@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from dreamer.algorithms.dreamer import Dreamer
 from dreamer.algorithms.plan2explore import Plan2Explore
-from dreamer.utils.utils import load_config, get_base_directory
+from dreamer.utils.utils import load_config, get_base_directory, PixelNormalization
 from dreamer.envs.envs import make_dmc_env, make_atari_env, get_env_infos
 
 
@@ -34,6 +34,7 @@ def main(config_file):
             width=config.environment.width,
             frame_skip=config.environment.frame_skip,
         )
+    env = PixelNormalization(env)
     obs_shape, discrete_action_bool, action_size = get_env_infos(env)
 
     log_dir = (
