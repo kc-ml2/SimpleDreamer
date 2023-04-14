@@ -3,7 +3,6 @@ import dmc2gym
 
 from dreamer.envs.wrappers import *
 
-
 def make_dmc_env(
     domain_name,
     task_name,
@@ -14,7 +13,7 @@ def make_dmc_env(
     width,
     frame_skip,
 ):
-    return dmc2gym.make(
+    env = dmc2gym.make(
         domain_name=domain_name,
         task_name=task_name,
         seed=seed,
@@ -24,16 +23,17 @@ def make_dmc_env(
         width=width,
         frame_skip=frame_skip,
     )
-
+    env = PixelNormalization(env)
+    return env
 
 def make_atari_env(task_name, skip_frame, width, height, seed):
     env = gym.make(task_name)
     env = gym.wrappers.ResizeObservation(env, (height, width))
     env = ChannelFirstEnv(env)
     env = SkipFrame(env, skip_frame)
+    env = PixelNormalization(env)
     env.seed(seed)
     return env
-
 
 def get_env_infos(env):
     obs_shape = env.observation_space.shape
@@ -45,5 +45,4 @@ def get_env_infos(env):
         action_size = env.action_space.shape[0]
     else:
         raise Exception
-
     return obs_shape, discrete_action_bool, action_size

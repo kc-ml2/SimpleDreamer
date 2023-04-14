@@ -1,8 +1,6 @@
 import gym
 import numpy as np
 
-from dreamer.utils.utils import pixel_normalization
-
 
 class ChannelFirstEnv(gym.ObservationWrapper):
     def __init__(self, env):
@@ -13,13 +11,13 @@ class ChannelFirstEnv(gym.ObservationWrapper):
             low=0, high=255, shape=obs_shape, dtype=np.uint8
         )
 
-    def permute_orientation(self, observation):
+    def _permute_orientation(self, observation):
         # permute [H, W, C] array to [C, H, W] tensor
         observation = np.transpose(observation, (2, 0, 1))
         return observation
 
     def observation(self, observation):
-        observation = self.permute_orientation(observation)
+        observation = self._permute_orientation(observation)
         return observation
 
 
@@ -42,12 +40,13 @@ class PixelNormalization(gym.Wrapper):
     def __init__(self, env):
         super().__init__(env)
 
+    def _pixel_normalization(self, obs):
+        return obs / 255.0 - 0.5
+
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
-
-        return pixel_normalization(obs), reward, done, info
+        return self._pixel_normalization(obs), reward, done, info
 
     def reset(self):
         obs = self.env.reset()
-
-        return pixel_normalization(obs)
+        return self._pixel_normalization(obs)
