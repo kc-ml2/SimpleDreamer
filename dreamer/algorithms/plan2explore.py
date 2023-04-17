@@ -137,7 +137,7 @@ class Plan2Explore(Dreamer):
             )
 
         reward_dist = self.reward_predictor(
-            posterior_info.posteriors, posterior_info.deterministics
+            posterior_info.posteriors.detach(), posterior_info.deterministics.detach()
         )
         reward_loss = reward_dist.log_prob(data.reward[:, 1:])
 
