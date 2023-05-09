@@ -13,7 +13,8 @@ environment :
     height : 64
     width : 64
     frame_skip : 2
-
+    pixel_norm : True
+    
 parameters :
     dreamer :
         train_iterations : 1000
