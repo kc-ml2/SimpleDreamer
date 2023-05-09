@@ -1,12 +1,13 @@
-algorithm : dreamer-v1
+algorithm : plan2explore
+
 operation :
     save : False
-    log_dir : walker-run
+    log_dir : apt-test
     device : cuda
 environment :
     benchmark : dmc
     domain_name : walker
-    task_name : run
+    task_name : walk
     seed : 0
     visualize_reward : False
     from_pixels : True
@@ -14,12 +15,17 @@ environment :
     width : 64
     frame_skip : 2
     pixel_norm : True
-
+    
 parameters :
+    apt :
+        knn_rms : false
+        knn_k : 100
+        knn_avg : true
+        knn_clip : 0.0
     dreamer :
-        train_iterations : 1000
+        train_iterations : 4000
         horizon_length : 15
-        batch_size : 50
+        batch_size : 15
         batch_length : 50
         collect_interval : 100
         num_interaction_episodes : 1
@@ -34,7 +40,7 @@ parameters :
         use_continue_flag : False
         actor_learning_rate : 0.00008
         critic_learning_rate : 0.00008
-        model_learning_rate : 0.0006
+        model_learning_rate : 0.0003
         grad_norm_type : 2
         clip_grad : 100
         

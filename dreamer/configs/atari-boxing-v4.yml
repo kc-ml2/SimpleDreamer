@@ -1,20 +1,16 @@
 algorithm : dreamer-v1
 operation :
     save : False
-    log_dir : walker-run
+    log_dir : atari-boxing-v4
     device : cuda
 environment :
-    benchmark : dmc
-    domain_name : walker
-    task_name : run
+    benchmark : atari
+    task_name : Boxing-v4
     seed : 0
-    visualize_reward : False
-    from_pixels : True
     height : 64
     width : 64
-    frame_skip : 2
+    frame_skip : 4
     pixel_norm : True
-
 parameters :
     dreamer :
         train_iterations : 1000
@@ -32,14 +28,14 @@ parameters :
         lambda_ : 0.95
         
         use_continue_flag : False
-        actor_learning_rate : 0.00008
-        critic_learning_rate : 0.00008
-        model_learning_rate : 0.0006
+        actor_learning_rate : 0.00004
+        critic_learning_rate : 0.0001
+        model_learning_rate : 0.0002
         grad_norm_type : 2
         clip_grad : 100
         
-        deterministic_size : 200
-        stochastic_size : 30
+        deterministic_size : 600
+        stochastic_size : 600
         embedded_state_size : 1024
         buffer :
             capacity : 5000000

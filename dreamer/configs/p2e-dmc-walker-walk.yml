@@ -14,6 +14,7 @@ environment :
     height : 64
     width : 64
     frame_skip : 2
+    pixel_norm : True
 
 parameters :
     plan2explore :
@@ -98,7 +99,7 @@ parameters :
                 init_std : 5.
                 mean_scale : 5
                 activation : ELU
-                num_layers : 2
+                num_layers : 4
 
             critic : 
                 hidden_size : 400

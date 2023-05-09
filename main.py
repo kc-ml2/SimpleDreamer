@@ -22,6 +22,7 @@ def main(config_file):
             height=config.environment.height,
             width=config.environment.width,
             skip_frame=config.environment.frame_skip,
+            pixel_norm=config.environment.pixel_norm,
         )
     elif config.environment.benchmark == "dmc":
         env = make_dmc_env(
@@ -33,6 +34,7 @@ def main(config_file):
             height=config.environment.height,
             width=config.environment.width,
             frame_skip=config.environment.frame_skip,
+            pixel_norm=config.environment.pixel_norm,
         )
     obs_shape, discrete_action_bool, action_size = get_env_infos(env)
 
