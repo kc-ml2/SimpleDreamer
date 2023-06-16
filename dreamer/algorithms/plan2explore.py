@@ -1,5 +1,9 @@
 import torch
 import torch.nn as nn
+
+
+import torch
+import torch.nn as nn
 import numpy as np
 
 from dreamer.algorithms.dreamer import Dreamer
@@ -53,6 +57,15 @@ class Plan2Explore(Dreamer):
         self.intrinsic_actor.intrinsic = True
         self.actor.intrinsic = False
 
+        
+        self.trans_net = nn.Sequential(nn.Linear(230 + action_size, 1024), nn.ReLU(), 
+                                nn.Linear(1024, 1024), nn.ReLU(), 
+                                nn.Linear(1024, 128))
+        self.rep_net = nn.Sequential(nn.Linear(230, 1024), nn.ReLU(), 
+                                nn.Linear(1024, 1024), nn.ReLU(), 
+                                nn.Linear(1024, 128))
+        
+        self.projector = 
     def train(self, env):
         if len(self.buffer) < 1:
             self.environment_interaction(
