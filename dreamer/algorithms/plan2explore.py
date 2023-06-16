@@ -70,18 +70,19 @@ class Plan2Explore(Dreamer):
         self.actor.intrinsic = False
 
         
-        self.trans_net = nn.Sequential(nn.Linear(230 + action_size, 1024), nn.ReLU(), 
-                                nn.Linear(1024, 1024), nn.ReLU(), 
-                                nn.Linear(1024, 128)).to('cuda')
-        self.rep_net = nn.Sequential(nn.Linear(230, 1024), nn.ReLU(), 
-                                nn.Linear(1024, 1024), nn.ReLU(), 
-                                nn.Linear(1024, 128)).to('cuda')
+        self.trans_net = nn.Sequential(nn.Linear(230 + action_size, 512), nn.ReLU(), 
+                                nn.Linear(512, 512), nn.ReLU(), 
+                                nn.Linear(512, 128)).to('cuda')
+        self.rep_net = nn.Sequential(nn.Linear(230, 512), nn.ReLU(), 
+                                nn.Linear(512, 512), nn.ReLU(), 
+                                nn.Linear(512, 128)).to('cuda')
         
         self.projector = nn.Sequential(nn.Linear(128, 256), nn.ReLU(), 
                                 nn.Linear(256, 256), nn.ReLU(), 
                                 nn.Linear(256, 128)).to('cuda')
         
         self.target_projector = self._get_teacher(self.projector)
+        
         
         self.target_ema_updater = EMA(0.99)
         
@@ -166,18 +167,19 @@ class Plan2Explore(Dreamer):
 
             if t > 1:
                 rep = self.rep_net(torch.cat((posterior.detach(), deterministic.detach()), -1))
-                projected_rep = self.target_projector(rep)
+                projected_rep = self.projector(rep).detach()
                 
                 f1 = F.normalize(projected_trans, p=2., dim=-1, eps=1e-5)
                 f2 = F.normalize(projected_rep, p=2., dim=-1, eps=1e-5)
-                rep_loss = -(f1 * f2).sum(dim=1).mean()
+                rep_loss = -(f1 * f2).sum(-1).mean()
                 #rep_loss = - self.criterion(projected_trans, projected_rep).mean()
-                
+                print("rep_loss ; ",rep_loss)
                 self.nce_optimizer.zero_grad()
                 rep_loss.backward()
 
                 self.nce_optimizer.step()
                 self.update_moving_average(self.projector, self.target_projector)
+                
             self.dynamic_learning_infos.append(
                 priors=prior,
                 prior_dist_means=prior_dist.mean,
@@ -187,6 +189,7 @@ class Plan2Explore(Dreamer):
                 posterior_dist_stds=posterior_dist.scale,
                 deterministics=deterministic,
             )
+            
             prior = posterior
 
         infos = self.dynamic_learning_infos.get_stacked()
