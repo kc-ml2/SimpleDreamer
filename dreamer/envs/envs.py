@@ -26,7 +26,8 @@ def make_dmc_env(
         frame_skip=frame_skip,
     )
     if pixel_norm:
-        env = PixelNormalization(env)
+        pass
+    env = PixelNormalization(env)
     return env
 
 
