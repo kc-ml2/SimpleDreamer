@@ -138,15 +138,22 @@ class Plan2Explore(Dreamer):
 
     def _model_update(self, data, posterior_info):
 
-        pos = posterior_info.posteriors.detach() #.reshape(-1, 30)
+        #pos = posterior_info.posteriors.detach() #.reshape(-1, 30)
+        pri = posterior_info.priors.detach()
         det = posterior_info.deterministics.detach() #.reshape(-1, 200)
         act = data.action.detach() #.reshape(-1,6)
 
-        
+        '''
         trans = self.trans_net(torch.cat((pos[:,:-1].reshape(-1,30), det[:,:-1].reshape(-1,200)\
                                           , act[:,1:-1].reshape(-1,6)),-1))
 
         target = torch.cat((pos[:,1:].reshape(-1,30), det[:,1:].reshape(-1,200)
+                                     ), -1)
+        '''
+        trans = self.trans_net(torch.cat((pri[:,:-1].reshape(-1,30), det[:,:-1].reshape(-1,200)\
+                                          , act[:,:-2].reshape(-1,6)),-1))
+
+        target = torch.cat((pri[:,1:].reshape(-1,30), det[:,1:].reshape(-1,200)
                                      ), -1)
 
         rep_loss = criterion(trans,target)
@@ -209,18 +216,16 @@ class Plan2Explore(Dreamer):
             norm_type=self.config.grad_norm_type,
         )
         self.model_optimizer.step()
-
+        trans = trans.detach().reshape(15,48,-1)
         predicted_feature_dists = [
             x(
-                data.action[:, :-1],
-                posterior_info.priors.detach(),
-                posterior_info.deterministics.detach(),
+                trans
             )
             for x in self.one_step_models
         ]
         one_step_model_loss = -sum(
             [
-                x.log_prob(data.embedded_observation[:, 1:].detach()).mean()
+                x.log_prob(data.embedded_observation[:, 1:-1].detach()).mean()
                 for x in predicted_feature_dists
             ]
         )
@@ -268,11 +273,10 @@ class Plan2Explore(Dreamer):
         self, actor, critic, actor_optimizer, critic_optimizer, behavior_learning_infos
     ):
         if actor.intrinsic:
+            trans = self.trans_net(torch.cat((behavior_learning_infos.priors, behavior_learning_infos.deterministics, behavior_learning_infos.actions),-1))
             predicted_feature_means = [
                 x(
-                    behavior_learning_infos.actions,
-                    behavior_learning_infos.priors,
-                    behavior_learning_infos.deterministics,
+                    trans
                 ).mean
                 for x in self.one_step_models
             ]
