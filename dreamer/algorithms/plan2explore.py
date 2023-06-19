@@ -59,12 +59,14 @@ class Plan2Explore(Dreamer):
         self.actor.intrinsic = False
 
         
-        self.trans_net = nn.Sequential(nn.Linear(230 + action_size, 512), nn.ReLU(), 
-                                nn.Linear(512, 512), nn.ReLU(), 
-                                nn.Linear(512, 230)).to('cuda')
+        self.state_encoder = nn.Sequential(nn.Linear(230 + action_size, 128), nn.ReLU(inplace=False), 
+                                nn.Linear(128, 64)).to('cuda')
+        self.state_decoder = nn.Sequential(nn.Linear(64, 128), nn.ReLU(inplace=False), 
+                                nn.Linear(128, 230)).to('cuda')
         
         self.nce_optimizer = torch.optim.Adam(
-            self.trans_net.parameters()
+            list(self.state_encoder.parameters()) + 
+            list(self.state_decoder.parameters())
             , lr=self.config.one_step_model_learning_rate
         )
         
@@ -142,7 +144,7 @@ class Plan2Explore(Dreamer):
         pri = posterior_info.priors.detach()
         det = posterior_info.deterministics.detach() #.reshape(-1, 200)
         act = data.action.detach() #.reshape(-1,6)
-
+        torch.autograd.set_detect_anomaly(True)
         '''
         trans = self.trans_net(torch.cat((pos[:,:-1].reshape(-1,30), det[:,:-1].reshape(-1,200)\
                                           , act[:,1:-1].reshape(-1,6)),-1))
@@ -150,13 +152,13 @@ class Plan2Explore(Dreamer):
         target = torch.cat((pos[:,1:].reshape(-1,30), det[:,1:].reshape(-1,200)
                                      ), -1)
         '''
-        trans = self.trans_net(torch.cat((pri[:,:-1].reshape(-1,30), det[:,:-1].reshape(-1,200)\
+        encoded = self.state_encoder(torch.cat((pri[:,:-1].reshape(-1,30), det[:,:-1].reshape(-1,200)\
                                           , act[:,:-2].reshape(-1,6)),-1))
-
+        decoded = self.state_decoder(encoded)
         target = torch.cat((pri[:,1:].reshape(-1,30), det[:,1:].reshape(-1,200)
                                      ), -1)
 
-        rep_loss = criterion(trans,target)
+        rep_loss = criterion(decoded,target)
         self.nce_optimizer.zero_grad()
         rep_loss.backward()
 
@@ -216,10 +218,10 @@ class Plan2Explore(Dreamer):
             norm_type=self.config.grad_norm_type,
         )
         self.model_optimizer.step()
-        trans = trans.detach().reshape(15,48,-1)
+        encoded = encoded.detach().reshape(15,48,-1)
         predicted_feature_dists = [
             x(
-                trans
+                encoded
             )
             for x in self.one_step_models
         ]
@@ -273,10 +275,10 @@ class Plan2Explore(Dreamer):
         self, actor, critic, actor_optimizer, critic_optimizer, behavior_learning_infos
     ):
         if actor.intrinsic:
-            trans = self.trans_net(torch.cat((behavior_learning_infos.priors, behavior_learning_infos.deterministics, behavior_learning_infos.actions),-1))
+            encoded = self.state_encoder(torch.cat((behavior_learning_infos.priors, behavior_learning_infos.deterministics, behavior_learning_infos.actions),-1))
             predicted_feature_means = [
                 x(
-                    trans
+                    encoded
                 ).mean
                 for x in self.one_step_models
             ]

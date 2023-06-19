@@ -22,19 +22,18 @@ class OneStepModel(nn.Module):
         self.action_size = action_size
 
         self.network = build_network(
-            self.deterministic_size + self.stochastic_size + action_size,
+            64,
             self.config.hidden_size,
             self.config.num_layers,
             self.config.activation,
             self.embedded_state_size,
         )
 
-    def forward(self, action, stochastic, deterministic):
-        stoch_deter = torch.concat((stochastic, deterministic), axis=-1)
+    def forward(self, x):
         x = horizontal_forward(
             self.network,
-            action,
-            stoch_deter,
+            x,
+            input_shape = (64,),
             output_shape=(self.embedded_state_size,),
         )
         dist = create_normal_dist(x, std=1, event_shape=1)
