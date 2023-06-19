@@ -17,18 +17,7 @@ from dreamer.utils.utils import (
 )
 from dreamer.utils.buffer import ReplayBuffer
 
-
-import copy
-class EMA():
-    def __init__(self, alpha):
-        super().__init__()
-        self.alpha = alpha
-
-    def update_average(self, old, new):
-        if old is None:
-            return new
-        return old * self.alpha + (1 - self.alpha) * new
-
+criterion = nn.MSELoss() 
 
 class Plan2Explore(Dreamer):
     def __init__(
@@ -72,39 +61,13 @@ class Plan2Explore(Dreamer):
         
         self.trans_net = nn.Sequential(nn.Linear(230 + action_size, 512), nn.ReLU(), 
                                 nn.Linear(512, 512), nn.ReLU(), 
-                                nn.Linear(512, 128)).to('cuda')
-        self.rep_net = nn.Sequential(nn.Linear(230, 512), nn.ReLU(), 
-                                nn.Linear(512, 512), nn.ReLU(), 
-                                nn.Linear(512, 128)).to('cuda')
-        
-        self.projector = nn.Sequential(nn.Linear(128, 256), nn.ReLU(), 
-                                nn.Linear(256, 256), nn.ReLU(), 
-                                nn.Linear(256, 128)).to('cuda')
-        
-        self.target_projector = self._get_teacher(self.projector)
-        
-        
-        self.target_ema_updater = EMA(0.99)
+                                nn.Linear(512, 230)).to('cuda')
         
         self.nce_optimizer = torch.optim.Adam(
-            list(self.trans_net.parameters()) + 
-            list(self.rep_net.parameters()) + 
-            list(self.projector.parameters())
+            self.trans_net.parameters()
             , lr=self.config.one_step_model_learning_rate
         )
         
-        self.criterion = nn.CosineSimilarity(dim=1).cuda()
-
-    @torch.no_grad()
-    def _get_teacher(self, model):
-        return copy.deepcopy(model)
-    
-    @torch.no_grad()
-    def update_moving_average(self, student_model, teacher_model):
-        for student_params, teacher_params in zip(student_model.parameters(), teacher_model.parameters()):
-            old_weight, up_weight = teacher_params.data, student_params.data
-            teacher_params.data = self.target_ema_updater.update_average(old_weight, up_weight)
-
     def train(self, env):
         if len(self.buffer) < 1:
             self.environment_interaction(
@@ -153,33 +116,10 @@ class Plan2Explore(Dreamer):
                 prior, data.action[:, t - 1], deterministic
             )
             prior_dist, prior = self.rssm.transition_model(deterministic)
-            ###
-            if t > 1 :
-                trans = self.trans_net(torch.cat((posterior.detach(), deterministic.detach(), data.action[:, t-1].detach()),-1))
-
-                projected_trans = self.projector(trans)
-            
-            
-            ###
             posterior_dist, posterior = self.rssm.representation_model(
                 data.embedded_observation[:, t], deterministic
             )
 
-            if t > 1:
-                rep = self.rep_net(torch.cat((posterior.detach(), deterministic.detach()), -1))
-                projected_rep = self.projector(rep).detach()
-                
-                f1 = F.normalize(projected_trans, p=2., dim=-1, eps=1e-5)
-                f2 = F.normalize(projected_rep, p=2., dim=-1, eps=1e-5)
-                rep_loss = -(f1 * f2).sum(-1).mean()
-                #rep_loss = - self.criterion(projected_trans, projected_rep).mean()
-                print("rep_loss ; ",rep_loss)
-                self.nce_optimizer.zero_grad()
-                rep_loss.backward()
-
-                self.nce_optimizer.step()
-                self.update_moving_average(self.projector, self.target_projector)
-                
             self.dynamic_learning_infos.append(
                 priors=prior,
                 prior_dist_means=prior_dist.mean,
@@ -194,12 +134,30 @@ class Plan2Explore(Dreamer):
 
         infos = self.dynamic_learning_infos.get_stacked()
         self._model_update(data, infos)
-        self.writer.add_scalar(
-            "rep_loss", rep_loss, self.num_total_episode
-        )
         return infos.posteriors.detach(), infos.deterministics.detach()
 
     def _model_update(self, data, posterior_info):
+
+        pos = posterior_info.posteriors.detach() #.reshape(-1, 30)
+        det = posterior_info.deterministics.detach() #.reshape(-1, 200)
+        act = data.action.detach() #.reshape(-1,6)
+
+        
+        trans = self.trans_net(torch.cat((pos[:,:-1].reshape(-1,30), det[:,:-1].reshape(-1,200)\
+                                          , act[:,1:-1].reshape(-1,6)),-1))
+
+        target = torch.cat((pos[:,1:].reshape(-1,30), det[:,1:].reshape(-1,200)
+                                     ), -1)
+
+        rep_loss = criterion(trans,target)
+        self.nce_optimizer.zero_grad()
+        rep_loss.backward()
+
+        self.nce_optimizer.step()
+
+        self.writer.add_scalar(
+            "rep_loss", rep_loss, self.num_total_episode
+        )        
         reconstructed_observation_dist = self.decoder(
             posterior_info.posteriors, posterior_info.deterministics
         )
