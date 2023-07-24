@@ -1,12 +1,10 @@
-import collections
-import collections.abc
-for type_name in collections.abc.__all__:
-        setattr(collections, type_name, getattr(collections.abc, type_name))
+from dreamer.utils.utils import attrdict_monkeypatch_fix
+
+attrdict_monkeypatch_fix()
 
 from attrdict import AttrDict
 import numpy as np
 import torch
-
 
 class ReplayBuffer(object):
     def __init__(self, observation_shape, action_size, device, config):
